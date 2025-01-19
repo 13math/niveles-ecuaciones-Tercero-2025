@@ -19,15 +19,11 @@
         .container {
             margin: 20px auto;
             padding: 20px;
-            max-width: 500px;
+            max-width: fit-content;
             background-color: #fff;
             border: 2px solid #6c757d;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        #admin-container {
-            max-width: none;
-            width: fit-content;
         }
         input {
             font-size: 18px;
@@ -100,13 +96,13 @@
                     <th>Oro</th>
                     <th>Diamante</th>
                     <th>Maestro</th>
-                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="user-records">
                 <!-- Los registros se generarán dinámicamente -->
             </tbody>
         </table>
+        <button onclick="downloadRecords()">Descargar Registro</button>
         <button onclick="logoutAdmin()">Cerrar Vista de Administrador</button>
     </div>
 
@@ -138,6 +134,7 @@
         }
 
         function generateEquation(levelIndex) {
+            // Genera una ecuación simple (puedes personalizarla por nivel)
             const a = Math.floor(Math.random() * 10) + 1;
             const b = Math.floor(Math.random() * 20) - 10;
             const x = Math.floor(Math.random() * 10);
@@ -166,7 +163,7 @@
                 localStorage.setItem("users", JSON.stringify(users));
                 updateGameView();
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
-                loadAdminView();
+                loadAdminView(); // Actualizar la tabla de registros
             } else {
                 document.getElementById("game-feedback").textContent = "¡Felicidades! Has completado todos los niveles.";
             }
@@ -195,18 +192,30 @@
                 row.innerHTML = `
                     <td>${username}</td>
                     ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
-                    <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
             }
         }
 
-        function deleteUser(username) {
-            if (confirm(`¿Estás seguro de que quieres eliminar al usuario "${username}"?`)) {
-                delete users[username];
-                localStorage.setItem("users", JSON.stringify(users));
-                loadAdminView();
-            }
+        function downloadRecords() {
+            const headers = ["Username", ...levels];
+            const rows = Object.entries(users).map(([username, data]) => [
+                username,
+                ...levels.map((_, i) => data.progress[i] || "-")
+            ]);
+
+            let csvContent = headers.join(",") + "\n";
+            rows.forEach(row => {
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "user_records.csv";
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function logoutAdmin() {
