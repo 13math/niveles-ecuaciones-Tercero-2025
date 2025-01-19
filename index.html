@@ -1,10 +1,9 @@
-<!-- Juego: El Caminante Perdido (Ecuaciones) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Caminante Perdido (Ecuaciones)</title>
+    <title>El Caminante Perdido - Niveles</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +13,10 @@
             margin: 0;
             padding: 0;
         }
-        .game-container {
+        .hidden {
+            display: none;
+        }
+        .container {
             margin: 20px auto;
             padding: 20px;
             max-width: 500px;
@@ -22,28 +24,6 @@
             border: 2px solid #6c757d;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .path {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 0;
-            padding: 10px;
-            background-color: #e9ecef;
-            border-radius: 10px;
-        }
-        .path span {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #ccc;
-            border-radius: 50%;
-            font-weight: bold;
-        }
-        .player {
-            background-color: #007bff;
-            color: white;
         }
         input {
             font-size: 18px;
@@ -55,7 +35,7 @@
         }
         button {
             padding: 10px 20px;
-            background-color: #28a745;
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
@@ -63,122 +43,167 @@
             font-size: 16px;
         }
         button:hover {
-            background-color: #218838;
+            background-color: #0056b3;
         }
-        .feedback {
-            font-size: 1.2em;
-            margin-top: 10px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-        .equation {
-            font-size: 1.5em;
-            margin: 15px 0;
-            color: #333;
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f9;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h1>El Caminante Perdido (Ecuaciones)</h1>
-    <div class="game-container">
-        <p id="user-level"></p>
-        <button onclick="logout()">Cerrar sesión</button>
-        <div class="path" id="path"></div>
+    <h1>El Caminante Perdido</h1>
+
+    <!-- Contenedor de inicio de sesión -->
+    <div class="container" id="login-container">
+        <h2>Iniciar Sesión o Registrarse</h2>
+        <input type="text" id="username" placeholder="Nombre de usuario">
+        <button onclick="login()">Iniciar Sesión</button>
+        <button onclick="requestAdminAccess()">Ver Registro de Usuarios</button>
+        <p class="feedback" id="login-feedback"></p>
+    </div>
+
+    <!-- Contenedor del juego -->
+    <div class="container hidden" id="game-container">
+        <h2>Bienvenido, <span id="player-name"></span></h2>
+        <p>Nivel actual: <span id="current-level">Bronce</span></p>
         <p class="equation" id="equation"></p>
         <input type="text" id="answer" placeholder="Ingresa el valor de x">
         <button onclick="checkAnswer()">Enviar</button>
-        <p class="feedback" id="feedback"></p>
+        <button onclick="logout()">Cerrar Sesión</button>
+        <p class="feedback" id="game-feedback"></p>
+    </div>
+
+    <!-- Contenedor del administrador -->
+    <div class="container hidden" id="admin-container">
+        <h2>Registro de Usuarios</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Bronce</th>
+                    <th>Plata</th>
+                    <th>Oro</th>
+                    <th>Diamante</th>
+                    <th>Maestro</th>
+                </tr>
+            </thead>
+            <tbody id="user-records">
+                <!-- Los registros se generarán dinámicamente -->
+            </tbody>
+        </table>
+        <button onclick="logoutAdmin()">Cerrar Vista de Administrador</button>
     </div>
 
     <script>
-        let currentPosition = 0;
-        let goalPosition = 10;
-        let currentProblem = generateProblem();
+        const levels = ["Bronce", "Plata", "Oro", "Diamante", "Maestro"];
+        let users = JSON.parse(localStorage.getItem("users")) || {};
+        let currentUser = null;
 
-        const pathElement = document.getElementById('path');
-        const equationElement = document.getElementById('equation');
-        const feedbackElement = document.getElementById('feedback');
-        const userLevelElement = document.getElementById('user-level');
-
-        // Simulación de nivel del usuario
-        const userLevel = localStorage.getItem('userLevel') || 'Bronce';
-        userLevelElement.textContent = `Nivel actual: ${userLevel}`;
-
-        function logout() {
-            localStorage.removeItem('userLevel');
-            window.location.href = 'index.html';
-        }
-
-        function generateProblem() {
-            const a = Math.floor(Math.random() * 9) + 1; // Coeficiente de x (1-9)
-            const x = Math.floor(Math.random() * 10); // Solución (0-9)
-            const b = Math.floor(Math.random() * 19) - 9; // Término independiente (-9 a 9)
-            const c = a * x + b; // Resultado de la ecuación
-
-            const formattedB = b >= 0 ? `+ ${b}` : `- ${Math.abs(b)}`;
-            return {
-                equation: `${a}x ${formattedB} = ${c}`,
-                answer: x
-            };
-        }
-
-        function updatePath() {
-            pathElement.innerHTML = '';
-            for (let i = 0; i <= goalPosition; i++) {
-                const span = document.createElement('span');
-                span.textContent = i;
-                if (i === currentPosition) {
-                    span.classList.add('player');
-                }
-                pathElement.appendChild(span);
-            }
-        }
-
-        function updateEquation() {
-            equationElement.textContent = `Resuelve: ${currentProblem.equation}`;
-        }
-
-        function checkAnswer() {
-            const playerAnswer = parseInt(document.getElementById('answer').value);
-
-            if (isNaN(playerAnswer)) {
-                feedbackElement.textContent = 'Por favor, ingresa un número válido.';
-                feedbackElement.style.color = 'red';
+        function login() {
+            const username = document.getElementById("username").value.trim();
+            if (!username) {
+                document.getElementById("login-feedback").textContent = "Por favor, ingresa un nombre de usuario.";
                 return;
             }
 
-            if (playerAnswer === currentProblem.answer) {
-                currentPosition++;
-                feedbackElement.textContent = '¡Correcto! Avanzas un paso.';
-                feedbackElement.style.color = 'green';
-                if (currentPosition === goalPosition) {
-                    feedbackElement.textContent = '¡Felicidades! Has llegado al final del camino.';
-                    feedbackElement.style.color = 'blue';
-                    resetGame();
-                } else {
-                    currentProblem = generateProblem();
-                }
-            } else {
-                currentPosition = Math.max(0, currentPosition - 1);
-                feedbackElement.textContent = 'Incorrecto. Retrocedes un paso.';
-                feedbackElement.style.color = 'orange';
+            if (!users[username]) {
+                users[username] = { levelIndex: 0, progress: [] };
             }
-
-            updatePath();
-            updateEquation();
-            document.getElementById('answer').value = '';
+            currentUser = username;
+            document.getElementById("player-name").textContent = currentUser;
+            updateGameView();
+            switchView("game-container");
         }
 
-        function resetGame() {
-            setTimeout(() => {
-                currentPosition = 0;
-                currentProblem = generateProblem();
-                feedbackElement.textContent = '';
-                updatePath();
-                updateEquation();
-            }, 3000);
+        function updateGameView() {
+            const levelIndex = users[currentUser].levelIndex;
+            document.getElementById("current-level").textContent = levels[levelIndex];
+            generateEquation(levelIndex);
         }
 
-        updatePath();
-        updateEquation();
+        function generateEquation(levelIndex) {
+            // Genera una ecuación simple (puedes personalizarla por nivel)
+            const a = Math.floor(Math.random() * 10) + 1;
+            const b = Math.floor(Math.random() * 20) - 10;
+            const x = Math.floor(Math.random() * 10);
+            const c = a * x + b;
+
+            const formattedB = b >= 0 ? `+ ${b}` : `- ${Math.abs(b)}`;
+            document.getElementById("equation").textContent = `${a}x ${formattedB} = ${c}`;
+            document.getElementById("equation").dataset.answer = x;
+        }
+
+        function checkAnswer() {
+            const answer = parseInt(document.getElementById("answer").value);
+            const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
+            if (answer === correctAnswer) {
+                advanceLevel();
+            } else {
+                document.getElementById("game-feedback").textContent = "Respuesta incorrecta. Intenta de nuevo.";
+            }
+        }
+
+        function advanceLevel() {
+            const levelIndex = users[currentUser].levelIndex;
+            if (levelIndex < levels.length - 1) {
+                users[currentUser].levelIndex++;
+                users[currentUser].progress[levelIndex] = new Date().toLocaleDateString();
+                localStorage.setItem("users", JSON.stringify(users));
+                updateGameView();
+                document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
+                loadAdminView(); // Actualizar la tabla de registros
+            } else {
+                document.getElementById("game-feedback").textContent = "¡Felicidades! Has completado todos los niveles.";
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            switchView("login-container");
+        }
+
+        function requestAdminAccess() {
+            const password = prompt("Introduce la contraseña de administrador:");
+            if (password === "admin123") {
+                switchView("admin-container");
+                loadAdminView();
+            } else {
+                alert("Contraseña incorrecta.");
+            }
+        }
+
+        function loadAdminView() {
+            const records = document.getElementById("user-records");
+            records.innerHTML = "";
+            for (const [username, data] of Object.entries(users)) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${username}</td>
+                    ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
+                `;
+                records.appendChild(row);
+            }
+        }
+
+        function logoutAdmin() {
+            switchView("login-container");
+        }
+
+        function switchView(containerId) {
+            document.querySelectorAll(".container").forEach(c => c.classList.add("hidden"));
+            document.getElementById(containerId).classList.remove("hidden");
+        }
     </script>
 </body>
 </html>
