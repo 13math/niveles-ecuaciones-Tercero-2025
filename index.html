@@ -133,10 +133,16 @@
             if (!users[username]) {
                 users[username] = { levelIndex: 0, progress: [], attempts: Array(levels.length).fill(0) };
             }
+
             currentUser = username;
-            document.getElementById("player-name").textContent = currentUser;
-            updateGameView();
-            switchView("game-container");
+
+            if (users[currentUser].levelIndex === levels.length - 1) {
+                switchToCongratulations();
+            } else {
+                document.getElementById("player-name").textContent = currentUser;
+                updateGameView();
+                switchView("game-container");
+            }
         }
 
         function updateGameView() {
