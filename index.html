@@ -96,6 +96,7 @@
                     <th>Oro</th>
                     <th>Diamante</th>
                     <th>Maestro</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="user-records">
@@ -133,7 +134,6 @@
         }
 
         function generateEquation(levelIndex) {
-            // Genera una ecuación simple (puedes personalizarla por nivel)
             const a = Math.floor(Math.random() * 10) + 1;
             const b = Math.floor(Math.random() * 20) - 10;
             const x = Math.floor(Math.random() * 10);
@@ -162,7 +162,7 @@
                 localStorage.setItem("users", JSON.stringify(users));
                 updateGameView();
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
-                loadAdminView(); // Actualizar la tabla de registros
+                loadAdminView();
             } else {
                 document.getElementById("game-feedback").textContent = "¡Felicidades! Has completado todos los niveles.";
             }
@@ -191,8 +191,17 @@
                 row.innerHTML = `
                     <td>${username}</td>
                     ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
+                    <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
+            }
+        }
+
+        function deleteUser(username) {
+            if (confirm(`¿Estás seguro de que quieres eliminar al usuario "${username}"?`)) {
+                delete users[username];
+                localStorage.setItem("users", JSON.stringify(users));
+                loadAdminView();
             }
         }
 
