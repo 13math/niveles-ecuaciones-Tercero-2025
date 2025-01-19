@@ -81,7 +81,6 @@
     <div class="container hidden" id="game-container">
         <h2>Bienvenido, <span id="player-name"></span></h2>
         <p>Nivel actual: <span id="current-level">Bronce</span></p>
-        <p>Intentos en este nivel: <span id="attempt-count">0</span></p>
         <p class="equation" id="equation"></p>
         <input type="text" id="answer" placeholder="Ingresa el valor de x">
         <button onclick="checkAnswer()">Enviar</button>
@@ -101,7 +100,6 @@
                     <th>Oro</th>
                     <th>Diamante</th>
                     <th>Maestro</th>
-                    <th>Intentos Totales</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -137,21 +135,13 @@
             }
             currentUser = username;
             document.getElementById("player-name").textContent = currentUser;
-
-            // Verificar si el usuario ya alcanzó el nivel Maestro
-            const levelIndex = users[currentUser].levelIndex;
-            if (levelIndex === levels.length - 1) {
-                switchToCongratulations();
-            } else {
-                updateGameView();
-                switchView("game-container");
-            }
+            updateGameView();
+            switchView("game-container");
         }
 
         function updateGameView() {
             const levelIndex = users[currentUser].levelIndex;
             document.getElementById("current-level").textContent = levels[levelIndex];
-            document.getElementById("attempt-count").textContent = users[currentUser].attempts[levelIndex];
             generateEquation(levelIndex);
         }
 
@@ -169,12 +159,15 @@
         function checkAnswer() {
             const answer = parseInt(document.getElementById("answer").value);
             const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
+            const levelIndex = users[currentUser].levelIndex;
+
+            // Incrementar los intentos
+            users[currentUser].attempts[levelIndex]++;
+            localStorage.setItem("users", JSON.stringify(users));
+
             if (answer === correctAnswer) {
                 advanceLevel();
             } else {
-                users[currentUser].attempts[users[currentUser].levelIndex]++;
-                localStorage.setItem("users", JSON.stringify(users));
-                document.getElementById("attempt-count").textContent = users[currentUser].attempts[users[currentUser].levelIndex];
                 document.getElementById("game-feedback").textContent = "Respuesta incorrecta. Intenta de nuevo.";
             }
         }
@@ -187,12 +180,12 @@
                 localStorage.setItem("users", JSON.stringify(users));
                 updateGameView();
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
-                loadAdminView();
+                loadAdminView(); // Actualizar la tabla de registros
             } else {
-                users[currentUser].progress[levelIndex] = new Date().toLocaleString();
+                users[currentUser].progress[levelIndex] = new Date().toLocaleString(); // Registrar "Maestro"
                 localStorage.setItem("users", JSON.stringify(users));
                 switchToCongratulations();
-                loadAdminView();
+                loadAdminView(); // Actualizar la tabla de registros
             }
         }
 
@@ -220,12 +213,12 @@
             const records = document.getElementById("user-records");
             records.innerHTML = "";
             for (const [username, data] of Object.entries(users)) {
-                const totalAttempts = data.attempts.reduce((sum, attempts) => sum + attempts, 0);
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${username}</td>
-                    ${levels.map((_, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
-                    <td>${totalAttempts}</td>
+                    ${levels.map((level, i) => `
+                        <td>${data.progress[i] || "-"}<br><small>Intentos: ${data.attempts[i]}</small></td>
+                    `).join("")}
                     <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
@@ -241,10 +234,12 @@
         }
 
         function downloadRecords() {
-            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro,Intentos Totales"];
+            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro,Intentos_Bronce,Intentos_Plata,Intentos_Oro,Intentos_Diamante,Intentos_Maestro"];
             for (const [username, data] of Object.entries(users)) {
-                const totalAttempts = data.attempts.reduce((sum, attempts) => sum + attempts, 0);
-                const row = [username, ...levels.map((_, i) => data.progress[i] || "-"), totalAttempts];
+                const row = [username, 
+                    ...levels.map((_, i) => data.progress[i] || "-"),
+                    ...data.attempts
+                ];
                 rows.push(row.join(","));
             }
             const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
