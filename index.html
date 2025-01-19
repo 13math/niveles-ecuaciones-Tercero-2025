@@ -1,10 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- ... Meta y estilo mantenidos igual ... -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Caminante Perdido - Niveles</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .hidden {
+            display: none;
+        }
+        .container {
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 500px;
+            background-color: #fff;
+            border: 2px solid #6c757d;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        input {
+            font-size: 18px;
+            padding: 10px;
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f9;
+            font-weight: bold;
+        }
+        #admin-container {
+            max-width: none;
+            width: fit-content;
+        }
+    </style>
 </head>
 <body>
-    <!-- ... Contenido HTML mantenido igual ... -->
+    <h1>El Caminante Perdido</h1>
+
+    <!-- Contenedor de inicio de sesión -->
+    <div class="container" id="login-container">
+        <h2>Iniciar Sesión o Registrarse</h2>
+        <input type="text" id="username" placeholder="Nombre de usuario">
+        <button onclick="login()">Iniciar Sesión</button>
+        <button onclick="requestAdminAccess()">Ver Registro de Usuarios</button>
+        <p class="feedback" id="login-feedback"></p>
+    </div>
+
+    <!-- Contenedor del juego -->
+    <div class="container hidden" id="game-container">
+        <h2>Bienvenido, <span id="player-name"></span></h2>
+        <p>Nivel actual: <span id="current-level">Bronce</span></p>
+        <p class="equation" id="equation"></p>
+        <input type="text" id="answer" placeholder="Ingresa el valor de x">
+        <button onclick="checkAnswer()">Enviar</button>
+        <button onclick="logout()">Cerrar Sesión</button>
+        <p class="feedback" id="game-feedback"></p>
+    </div>
+
+    <!-- Contenedor del administrador -->
+    <div class="container hidden" id="admin-container">
+        <h2>Registro de Usuarios</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Bronce</th>
+                    <th>Plata</th>
+                    <th>Oro</th>
+                    <th>Diamante</th>
+                    <th>Maestro</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="user-records">
+                <!-- Los registros se generarán dinámicamente -->
+            </tbody>
+        </table>
+        <button onclick="downloadRecords()">Descargar Registro</button>
+        <button onclick="logoutAdmin()">Cerrar Vista de Administrador</button>
+    </div>
+
+    <!-- Contenedor de felicitación -->
+    <div class="container hidden" id="congratulations-container">
+        <h2>¡Felicidades, <span id="winner-name"></span>!</h2>
+        <p>Has completado todos los niveles y alcanzado el nivel Maestro.</p>
+        <button onclick="logout()">Cerrar Sesión</button>
+    </div>
 
     <script>
         const levels = ["Bronce", "Plata", "Oro", "Diamante", "Maestro"];
@@ -23,22 +135,13 @@
             }
             currentUser = username;
             document.getElementById("player-name").textContent = currentUser;
-
-            const levelIndex = users[currentUser].levelIndex;
-            if (levelIndex === levels.length - 1) {
-                switchToCongratulations();
-            } else {
-                updateGameView();
-                switchView("game-container");
-            }
-
-            loadAdminView(); // Actualizar vista de administrador tras iniciar sesión
+            updateGameView();
+            switchView("game-container");
         }
 
         function updateGameView() {
             const levelIndex = users[currentUser].levelIndex;
             document.getElementById("current-level").textContent = levels[levelIndex];
-            document.getElementById("attempt-count").textContent = users[currentUser].attempts[levelIndex];
             generateEquation(levelIndex);
         }
 
@@ -56,15 +159,16 @@
         function checkAnswer() {
             const answer = parseInt(document.getElementById("answer").value);
             const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
+            const levelIndex = users[currentUser].levelIndex;
+
+            // Incrementar los intentos
+            users[currentUser].attempts[levelIndex]++;
+            localStorage.setItem("users", JSON.stringify(users));
 
             if (answer === correctAnswer) {
                 advanceLevel();
             } else {
-                users[currentUser].attempts[users[currentUser].levelIndex]++;
-                localStorage.setItem("users", JSON.stringify(users));
-                document.getElementById("attempt-count").textContent = users[currentUser].attempts[users[currentUser].levelIndex];
                 document.getElementById("game-feedback").textContent = "Respuesta incorrecta. Intenta de nuevo.";
-                loadAdminView(); // Actualizar vista de administrador tras cada intento
             }
         }
 
@@ -76,18 +180,18 @@
                 localStorage.setItem("users", JSON.stringify(users));
                 updateGameView();
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
+                loadAdminView(); // Actualizar la tabla de registros
             } else {
-                users[currentUser].progress[levelIndex] = new Date().toLocaleString();
+                users[currentUser].progress[levelIndex] = new Date().toLocaleString(); // Registrar "Maestro"
                 localStorage.setItem("users", JSON.stringify(users));
                 switchToCongratulations();
+                loadAdminView(); // Actualizar la tabla de registros
             }
-            loadAdminView(); // Actualizar vista de administrador tras avanzar de nivel
         }
 
         function switchToCongratulations() {
             document.getElementById("winner-name").textContent = currentUser;
             switchView("congratulations-container");
-            loadAdminView(); // Actualizar vista de administrador al alcanzar el nivel Maestro
         }
 
         function logout() {
@@ -99,7 +203,7 @@
             const password = prompt("Introduce la contraseña de administrador:");
             if (password === "admin123") {
                 switchView("admin-container");
-                loadAdminView(); // Asegurar que la vista se actualice al acceder
+                loadAdminView();
             } else {
                 alert("Contraseña incorrecta.");
             }
@@ -109,12 +213,12 @@
             const records = document.getElementById("user-records");
             records.innerHTML = "";
             for (const [username, data] of Object.entries(users)) {
-                const totalAttempts = data.attempts.reduce((sum, attempts) => sum + attempts, 0);
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${username}</td>
-                    ${levels.map((_, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
-                    <td>${totalAttempts}</td>
+                    ${levels.map((level, i) => `
+                        <td>${data.progress[i] || "-"}<br><small>Intentos: ${data.attempts[i]}</small></td>
+                    `).join("")}
                     <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
@@ -125,15 +229,17 @@
             if (confirm(`¿Estás seguro de que deseas eliminar a ${username}?`)) {
                 delete users[username];
                 localStorage.setItem("users", JSON.stringify(users));
-                loadAdminView(); // Actualizar vista de administrador tras eliminar usuario
+                loadAdminView();
             }
         }
 
         function downloadRecords() {
-            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro,Intentos Totales"];
+            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro,Intentos_Bronce,Intentos_Plata,Intentos_Oro,Intentos_Diamante,Intentos_Maestro"];
             for (const [username, data] of Object.entries(users)) {
-                const totalAttempts = data.attempts.reduce((sum, attempts) => sum + attempts, 0);
-                const row = [username, ...levels.map((_, i) => data.progress[i] || "-"), totalAttempts];
+                const row = [username, 
+                    ...levels.map((_, i) => data.progress[i] || "-"),
+                    ...data.attempts
+                ];
                 rows.push(row.join(","));
             }
             const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
