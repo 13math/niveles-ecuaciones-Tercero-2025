@@ -131,7 +131,7 @@
             }
 
             if (!users[username]) {
-                users[username] = { levelIndex: 0, progress: [] };
+                users[username] = { levelIndex: 0, progress: [], attempts: Array(levels.length).fill(0) };
             }
             currentUser = username;
             document.getElementById("player-name").textContent = currentUser;
@@ -159,6 +159,12 @@
         function checkAnswer() {
             const answer = parseInt(document.getElementById("answer").value);
             const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
+            const levelIndex = users[currentUser].levelIndex;
+
+            // Incrementar los intentos
+            users[currentUser].attempts[levelIndex]++;
+            localStorage.setItem("users", JSON.stringify(users));
+
             if (answer === correctAnswer) {
                 advanceLevel();
             } else {
@@ -210,7 +216,9 @@
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${username}</td>
-                    ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
+                    ${levels.map((level, i) => `
+                        <td>${data.progress[i] || "-"}<br><small>Intentos: ${data.attempts[i]}</small></td>
+                    `).join("")}
                     <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
@@ -226,9 +234,12 @@
         }
 
         function downloadRecords() {
-            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro"];
+            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro,Intentos_Bronce,Intentos_Plata,Intentos_Oro,Intentos_Diamante,Intentos_Maestro"];
             for (const [username, data] of Object.entries(users)) {
-                const row = [username, ...levels.map((_, i) => data.progress[i] || "-")];
+                const row = [username, 
+                    ...levels.map((_, i) => data.progress[i] || "-"),
+                    ...data.attempts
+                ];
                 rows.push(row.join(","));
             }
             const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
