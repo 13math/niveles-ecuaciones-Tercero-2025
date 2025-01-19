@@ -123,6 +123,7 @@
         let users = JSON.parse(localStorage.getItem("users")) || {};
         let currentUser = null;
 
+        // Modificar la estructura de los usuarios para incluir los intentos por nivel
         function login() {
             const username = document.getElementById("username").value.trim();
             if (!username) {
@@ -131,7 +132,7 @@
             }
 
             if (!users[username]) {
-                users[username] = { levelIndex: 0, progress: [] };
+                users[username] = { levelIndex: 0, progress: [], attempts: Array(levels.length).fill(0) };
             }
             currentUser = username;
             document.getElementById("player-name").textContent = currentUser;
@@ -159,10 +160,16 @@
         function checkAnswer() {
             const answer = parseInt(document.getElementById("answer").value);
             const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
+            const levelIndex = users[currentUser].levelIndex;
+
+            // Incrementar el contador de intentos para el nivel actual
+            users[currentUser].attempts[levelIndex]++;
+            localStorage.setItem("users", JSON.stringify(users));
+
             if (answer === correctAnswer) {
                 advanceLevel();
             } else {
-                document.getElementById("game-feedback").textContent = "Respuesta incorrecta. Intenta de nuevo.";
+                document.getElementById("game-feedback").textContent = `Respuesta incorrecta. Intentos: ${users[currentUser].attempts[levelIndex]}`;
             }
         }
 
@@ -210,7 +217,7 @@
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${username}</td>
-                    ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
+                    ${levels.map((level, i) => `<td>${data.progress[i] || "-"} (${data.attempts[i] || 0} intentos)</td>`).join("")}
                     <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
@@ -228,7 +235,7 @@
         function downloadRecords() {
             const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro"];
             for (const [username, data] of Object.entries(users)) {
-                const row = [username, ...levels.map((_, i) => data.progress[i] || "-")];
+                const row = [username, ...levels.map((_, i) => `${data.progress[i] || "-"} (${data.attempts[i] || 0} intentos)`)];
                 rows.push(row.join(","));
             }
             const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
