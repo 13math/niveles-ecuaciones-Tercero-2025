@@ -172,6 +172,8 @@
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
                 loadAdminView(); // Actualizar la tabla de registros
             } else {
+                users[currentUser].progress[levelIndex] = new Date().toLocaleDateString();
+                localStorage.setItem("users", JSON.stringify(users));
                 switchToCongratulations();
             }
         }
