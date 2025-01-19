@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Caminante Perdido - Niveles</title>
+    <title>El Caminante Perdido (Ecuaciones) - Admin</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,10 +13,7 @@
             margin: 0;
             padding: 0;
         }
-        .hidden {
-            display: none;
-        }
-        .container {
+        .game-container {
             margin: 20px auto;
             padding: 20px;
             max-width: 500px;
@@ -25,25 +22,14 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        input {
-            font-size: 18px;
-            padding: 10px;
-            width: calc(100% - 22px);
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #0056b3;
+        .admin-container {
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 800px;
+            background-color: #fff;
+            border: 2px solid #6c757d;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         table {
             width: 100%;
@@ -51,135 +37,155 @@
             margin-top: 20px;
         }
         th, td {
-            border: 1px solid #ccc;
             padding: 10px;
             text-align: center;
+            border: 1px solid #ddd;
         }
         th {
-            background-color: #f4f4f9;
-            font-weight: bold;
+            background-color: #007bff;
+            color: white;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .logout {
+            margin-top: 20px;
+            background-color: #dc3545;
+        }
+        .logout:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
 <body>
-    <h1>El Caminante Perdido</h1>
-
-    <!-- Contenedor de inicio de sesión -->
-    <div class="container" id="login-container">
-        <h2>Iniciar Sesión o Registrarse</h2>
-        <input type="text" id="username" placeholder="Nombre de usuario">
-        <button onclick="login()">Iniciar Sesión</button>
-        <button onclick="requestAdminAccess()">Ver Registro de Usuarios</button>
-        <p class="feedback" id="login-feedback"></p>
+    <h1>El Caminante Perdido (Ecuaciones)</h1>
+    <div id="login-container" class="game-container">
+        <h2>Iniciar Sesión</h2>
+        <input type="text" id="username" placeholder="Usuario">
+        <input type="password" id="password" placeholder="Contraseña (solo admin)">
+        <button onclick="login()">Entrar</button>
     </div>
 
-    <!-- Contenedor del juego -->
-    <div class="container hidden" id="game-container">
-        <h2>Bienvenido, <span id="player-name"></span></h2>
-        <p>Nivel actual: <span id="current-level">Bronce</span></p>
+    <div id="game-container" class="game-container" style="display: none;">
+        <h2 id="user-level">Bienvenido, Nivel: Bronce</h2>
+        <div class="path" id="path"></div>
         <p class="equation" id="equation"></p>
         <input type="text" id="answer" placeholder="Ingresa el valor de x">
         <button onclick="checkAnswer()">Enviar</button>
-        <button onclick="logout()">Cerrar Sesión</button>
-        <p class="feedback" id="game-feedback"></p>
+        <p class="feedback" id="feedback"></p>
+        <button class="logout" onclick="logout()">Cerrar Sesión</button>
     </div>
 
-    <!-- Contenedor del administrador -->
-    <div class="container hidden" id="admin-container">
-        <h2>Registro de Usuarios</h2>
+    <div id="admin-container" class="admin-container" style="display: none;">
+        <h2>Panel de Administración</h2>
         <table>
             <thead>
                 <tr>
-                    <th>Username</th>
+                    <th>Usuario</th>
                     <th>Bronce</th>
                     <th>Plata</th>
                     <th>Oro</th>
                     <th>Diamante</th>
                     <th>Maestro</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="user-records">
-                <!-- Los registros se generarán dinámicamente -->
-            </tbody>
+            <tbody id="user-records"></tbody>
         </table>
-        <button onclick="logoutAdmin()">Cerrar Vista de Administrador</button>
+        <button onclick="deleteAllUsers()">Eliminar Todos los Usuarios</button>
+        <button class="logout" onclick="logout()">Cerrar Sesión</button>
     </div>
 
     <script>
+        const adminPassword = "admin123";
         const levels = ["Bronce", "Plata", "Oro", "Diamante", "Maestro"];
         let users = JSON.parse(localStorage.getItem("users")) || {};
         let currentUser = null;
 
         function login() {
             const username = document.getElementById("username").value.trim();
-            if (!username) {
-                document.getElementById("login-feedback").textContent = "Por favor, ingresa un nombre de usuario.";
-                return;
-            }
+            const password = document.getElementById("password").value.trim();
 
-            if (!users[username]) {
-                users[username] = { levelIndex: 0, progress: [] };
+            if (username === "admin" && password === adminPassword) {
+                document.getElementById("login-container").style.display = "none";
+                document.getElementById("admin-container").style.display = "block";
+                loadAdminView();
+            } else if (username && !password) {
+                if (!users[username]) {
+                    users[username] = { progress: [] };
+                    localStorage.setItem("users", JSON.stringify(users));
+                }
+                currentUser = username;
+                document.getElementById("login-container").style.display = "none";
+                document.getElementById("game-container").style.display = "block";
+                updateUserLevel();
+            } else {
+                alert("Usuario o contraseña incorrectos.");
             }
-            currentUser = username;
-            document.getElementById("player-name").textContent = currentUser;
-            updateGameView();
-            switchView("game-container");
         }
 
-        function updateGameView() {
-            const levelIndex = users[currentUser].levelIndex;
-            document.getElementById("current-level").textContent = levels[levelIndex];
-            generateEquation(levelIndex);
+        function logout() {
+            currentUser = null;
+            document.getElementById("login-container").style.display = "block";
+            document.getElementById("game-container").style.display = "none";
+            document.getElementById("admin-container").style.display = "none";
         }
 
-        function generateEquation(levelIndex) {
-            // Genera una ecuación simple (puedes personalizarla por nivel)
+        function updateUserLevel() {
+            const level = users[currentUser].progress.length;
+            document.getElementById("user-level").textContent = `Bienvenido, Nivel: ${levels[level] || "Completo"}`;
+            updatePath();
+            updateEquation();
+        }
+
+        function generateProblem() {
             const a = Math.floor(Math.random() * 10) + 1;
             const b = Math.floor(Math.random() * 20) - 10;
             const x = Math.floor(Math.random() * 10);
             const c = a * x + b;
 
             const formattedB = b >= 0 ? `+ ${b}` : `- ${Math.abs(b)}`;
-            document.getElementById("equation").textContent = `${a}x ${formattedB} = ${c}`;
-            document.getElementById("equation").dataset.answer = x;
+            return {
+                equation: `${a}x ${formattedB} = ${c}`,
+                answer: x
+            };
+        }
+
+        function updatePath() {
+            const pathElement = document.getElementById("path");
+            pathElement.innerHTML = '';
+            for (let i = 0; i <= 10; i++) {
+                const span = document.createElement("span");
+                span.textContent = i;
+                pathElement.appendChild(span);
+            }
+        }
+
+        function updateEquation() {
+            const problem = generateProblem();
+            document.getElementById("equation").textContent = `Resuelve: ${problem.equation}`;
         }
 
         function checkAnswer() {
             const answer = parseInt(document.getElementById("answer").value);
-            const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
-            if (answer === correctAnswer) {
-                advanceLevel();
-            } else {
-                document.getElementById("game-feedback").textContent = "Respuesta incorrecta. Intenta de nuevo.";
-            }
-        }
+            const problem = generateProblem();
 
-        function advanceLevel() {
-            const levelIndex = users[currentUser].levelIndex;
-            if (levelIndex < levels.length - 1) {
-                users[currentUser].levelIndex++;
-                users[currentUser].progress[levelIndex] = new Date().toLocaleDateString();
+            if (answer === problem.answer) {
+                users[currentUser].progress.push(new Date().toLocaleDateString());
                 localStorage.setItem("users", JSON.stringify(users));
-                updateGameView();
-                document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
-                loadAdminView(); // Actualizar la tabla de registros
+                updateUserLevel();
+                alert("¡Correcto! Avanzas al siguiente nivel.");
             } else {
-                document.getElementById("game-feedback").textContent = "¡Felicidades! Has completado todos los niveles.";
-            }
-        }
-
-        function logout() {
-            currentUser = null;
-            switchView("login-container");
-        }
-
-        function requestAdminAccess() {
-            const password = prompt("Introduce la contraseña de administrador:");
-            if (password === "admin123") {
-                switchView("admin-container");
-                loadAdminView();
-            } else {
-                alert("Contraseña incorrecta.");
+                alert("Respuesta incorrecta. Intenta de nuevo.");
             }
         }
 
@@ -191,18 +197,30 @@
                 row.innerHTML = `
                     <td>${username}</td>
                     ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
+                    <td>
+                        <button onclick="deleteUser('${username}')">Eliminar</button>
+                    </td>
                 `;
                 records.appendChild(row);
             }
         }
 
-        function logoutAdmin() {
-            switchView("login-container");
+        function deleteUser(username) {
+            if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+                delete users[username];
+                localStorage.setItem("users", JSON.stringify(users));
+                loadAdminView();
+                alert(`El usuario "${username}" ha sido eliminado.`);
+            }
         }
 
-        function switchView(containerId) {
-            document.querySelectorAll(".container").forEach(c => c.classList.add("hidden"));
-            document.getElementById(containerId).classList.remove("hidden");
+        function deleteAllUsers() {
+            if (confirm("¿Estás seguro de que deseas eliminar a todos los usuarios?")) {
+                users = {};
+                localStorage.setItem("users", JSON.stringify(users));
+                loadAdminView();
+                alert("Todos los usuarios han sido eliminados.");
+            }
         }
     </script>
 </body>
