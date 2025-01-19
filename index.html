@@ -131,12 +131,21 @@
             }
 
             if (!users[username]) {
-                users[username] = { levelIndex: 0, progress: [], attempts: Array(levels.length).fill(0) };
+                users[username] = { levelIndex: 0, progress: [] };
             }
             currentUser = username;
             document.getElementById("player-name").textContent = currentUser;
-            updateGameView();
-            switchView("game-container");
+
+            // Verificar si el usuario ya alcanzó el nivel Maestro
+            const levelIndex = users[currentUser].levelIndex;
+            if (levelIndex === levels.length - 1) {
+                // Si alcanzó el nivel Maestro, redirigir a la pantalla de felicitaciones
+                switchToCongratulations();
+            } else {
+                // Si no ha alcanzado el nivel Maestro, cargar el juego
+                updateGameView();
+                switchView("game-container");
+            }
         }
 
         function updateGameView() {
@@ -159,12 +168,6 @@
         function checkAnswer() {
             const answer = parseInt(document.getElementById("answer").value);
             const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
-            const levelIndex = users[currentUser].levelIndex;
-
-            // Incrementar los intentos
-            users[currentUser].attempts[levelIndex]++;
-            localStorage.setItem("users", JSON.stringify(users));
-
             if (answer === correctAnswer) {
                 advanceLevel();
             } else {
@@ -182,6 +185,7 @@
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
                 loadAdminView(); // Actualizar la tabla de registros
             } else {
+                // Si el usuario alcanza el nivel Maestro
                 users[currentUser].progress[levelIndex] = new Date().toLocaleString(); // Registrar "Maestro"
                 localStorage.setItem("users", JSON.stringify(users));
                 switchToCongratulations();
@@ -216,9 +220,7 @@
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${username}</td>
-                    ${levels.map((level, i) => `
-                        <td>${data.progress[i] || "-"}<br><small>Intentos: ${data.attempts[i]}</small></td>
-                    `).join("")}
+                    ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
                     <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
@@ -234,12 +236,9 @@
         }
 
         function downloadRecords() {
-            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro,Intentos_Bronce,Intentos_Plata,Intentos_Oro,Intentos_Diamante,Intentos_Maestro"];
+            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro"];
             for (const [username, data] of Object.entries(users)) {
-                const row = [username, 
-                    ...levels.map((_, i) => data.progress[i] || "-"),
-                    ...data.attempts
-                ];
+                const row = [username, ...levels.map((_, i) => data.progress[i] || "-")];
                 rows.push(row.join(","));
             }
             const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
