@@ -64,18 +64,15 @@
             width: fit-content;
         }
     </style>
-    <!-- IntegraciÃ³n de MathJax -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
     <h1>El Caminante Perdido</h1>
 
-    <!-- Contenedor de inicio de sesiÃ³n -->
+    <!-- Contenedor de inicio de sesión -->
     <div class="container" id="login-container">
-        <h2>Iniciar SesiÃ³n o Registrarse</h2>
+        <h2>Iniciar Sesión o Registrarse</h2>
         <input type="text" id="username" placeholder="Nombre de usuario">
-        <button onclick="login()">Iniciar SesiÃ³n</button>
+        <button onclick="login()">Iniciar Sesión</button>
         <button onclick="requestAdminAccess()">Ver Registro de Usuarios</button>
         <p class="feedback" id="login-feedback"></p>
     </div>
@@ -87,7 +84,7 @@
         <p class="equation" id="equation"></p>
         <input type="text" id="answer" placeholder="Ingresa el valor de x">
         <button onclick="checkAnswer()">Enviar</button>
-        <button onclick="logout()">Cerrar SesiÃ³n</button>
+        <button onclick="logout()">Cerrar Sesión</button>
         <p class="feedback" id="game-feedback"></p>
     </div>
 
@@ -99,31 +96,26 @@
                 <tr>
                     <th>Username</th>
                     <th>Bronce</th>
-                    <th>Intentos Bronce</th>
                     <th>Plata</th>
-                    <th>Intentos Plata</th>
                     <th>Oro</th>
-                    <th>Intentos Oro</th>
                     <th>Diamante</th>
-                    <th>Intentos Diamante</th>
                     <th>Maestro</th>
-                    <th>Intentos Maestro</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="user-records">
-                <!-- Los registros se generarÃ¡n dinÃ¡micamente -->
+                <!-- Los registros se generarán dinámicamente -->
             </tbody>
         </table>
         <button onclick="downloadRecords()">Descargar Registro</button>
         <button onclick="logoutAdmin()">Cerrar Vista de Administrador</button>
     </div>
 
-    <!-- Contenedor de felicitaciÃ³n -->
+    <!-- Contenedor de felicitación -->
     <div class="container hidden" id="congratulations-container">
-        <h2>Â¡Felicidades, <span id="winner-name"></span>!</h2>
+        <h2>¡Felicidades, <span id="winner-name"></span>!</h2>
         <p>Has completado todos los niveles y alcanzado el nivel Maestro.</p>
-        <button onclick="logout()">Cerrar SesiÃ³n</button>
+        <button onclick="logout()">Cerrar Sesión</button>
     </div>
 
     <script>
@@ -139,7 +131,7 @@
             }
 
             if (!users[username]) {
-                users[username] = { levelIndex: 0, progress: [], attempts: Array(levels.length).fill(0) };
+                users[username] = { levelIndex: 0, progress: [] };
             }
             currentUser = username;
             document.getElementById("player-name").textContent = currentUser;
@@ -160,24 +152,20 @@
             const c = a * x + b;
 
             const formattedB = b >= 0 ? `+ ${b}` : `- ${Math.abs(b)}`;
-            const equation = `${a}x ${formattedB} = ${c}`;
-            document.getElementById("equation").innerHTML = `\\[${equation}\\]`;
-            MathJax.typeset(); // Renderizar ecuaciÃ³n
+            document.getElementById("equation").textContent = `${a}x ${formattedB} = ${c}`;
             document.getElementById("equation").dataset.answer = x;
         }
 
         function checkAnswer() {
             const answer = parseInt(document.getElementById("answer").value);
             const correctAnswer = parseInt(document.getElementById("equation").dataset.answer);
-            const levelIndex = users[currentUser].levelIndex;
-            users[currentUser].attempts[levelIndex]++;
             if (answer === correctAnswer) {
                 advanceLevel();
             } else {
                 document.getElementById("game-feedback").textContent = "Respuesta incorrecta. Intenta de nuevo.";
             }
         }
-       
+
         function advanceLevel() {
             const levelIndex = users[currentUser].levelIndex;
             if (levelIndex < levels.length - 1) {
@@ -185,7 +173,7 @@
                 users[currentUser].progress[levelIndex] = new Date().toLocaleString();
                 localStorage.setItem("users", JSON.stringify(users));
                 updateGameView();
-                document.getElementById("game-feedback").textContent = "Â¡Nivel completado! Avanzas al siguiente.";
+                document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
                 loadAdminView(); // Actualizar la tabla de registros
             } else {
                 users[currentUser].progress[levelIndex] = new Date().toLocaleString(); // Registrar "Maestro"
@@ -206,12 +194,12 @@
         }
 
         function requestAdminAccess() {
-            const password = prompt("Introduce la contraseÃ±a de administrador:");
+            const password = prompt("Introduce la contraseña de administrador:");
             if (password === "admin123") {
                 switchView("admin-container");
                 loadAdminView();
             } else {
-                alert("ContraseÃ±a incorrecta.");
+                alert("Contraseña incorrecta.");
             }
         }
 
@@ -222,7 +210,7 @@
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${username}</td>
-                    ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td><td>${data.attempts[i]}</td>`).join("")}
+                    ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
                     <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
@@ -230,7 +218,7 @@
         }
 
         function deleteUser(username) {
-            if (confirm(`Â¿EstÃ¡s seguro de que deseas eliminar a ${username}?`)) {
+            if (confirm(`¿Estás seguro de que deseas eliminar a ${username}?`)) {
                 delete users[username];
                 localStorage.setItem("users", JSON.stringify(users));
                 loadAdminView();
@@ -238,9 +226,9 @@
         }
 
         function downloadRecords() {
-            const rows = ["Username,Bronce,Intentos Bronce,Plata,Intentos Plata,Oro,Intentos Oro,Diamante,Intentos Diamante,Maestro,Intentos Maestro"];
+            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro"];
             for (const [username, data] of Object.entries(users)) {
-                const row = [username, ...levels.map((_, i) => `${data.progress[i] || "-"},${data.attempts[i]}`)];
+                const row = [username, ...levels.map((_, i) => data.progress[i] || "-")];
                 rows.push(row.join(","));
             }
             const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
