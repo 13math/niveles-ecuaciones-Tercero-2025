@@ -25,10 +25,6 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        #admin-container {
-            max-width: none;
-            width: fit-content;
-        }
         input {
             font-size: 18px;
             padding: 10px;
@@ -89,7 +85,7 @@
     </div>
 
     <!-- Contenedor del administrador -->
-    <div class="container hidden" id="admin-container">
+    <div class="container hidden" id="admin-container" style="width: fit-content;">
         <h2>Registro de Usuarios</h2>
         <table>
             <thead>
@@ -109,6 +105,13 @@
         </table>
         <button onclick="downloadRecords()">Descargar Registro</button>
         <button onclick="logoutAdmin()">Cerrar Vista de Administrador</button>
+    </div>
+
+    <!-- Contenedor de felicitación -->
+    <div class="container hidden" id="congratulations-container">
+        <h2>¡Felicidades, <span id="winner-name"></span>!</h2>
+        <p>Has completado todos los niveles y alcanzado el nivel Maestro.</p>
+        <button onclick="logout()">Cerrar Sesión</button>
     </div>
 
     <script>
@@ -139,7 +142,6 @@
         }
 
         function generateEquation(levelIndex) {
-            // Genera una ecuación simple (puedes personalizarla por nivel)
             const a = Math.floor(Math.random() * 10) + 1;
             const b = Math.floor(Math.random() * 20) - 10;
             const x = Math.floor(Math.random() * 10);
@@ -170,8 +172,13 @@
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
                 loadAdminView(); // Actualizar la tabla de registros
             } else {
-                document.getElementById("game-feedback").textContent = "¡Felicidades! Has completado todos los niveles.";
+                switchToCongratulations();
             }
+        }
+
+        function switchToCongratulations() {
+            document.getElementById("winner-name").textContent = currentUser;
+            switchView("congratulations-container");
         }
 
         function logout() {
@@ -204,7 +211,7 @@
         }
 
         function deleteUser(username) {
-            if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+            if (confirm(`¿Estás seguro de que deseas eliminar a ${username}?`)) {
                 delete users[username];
                 localStorage.setItem("users", JSON.stringify(users));
                 loadAdminView();
@@ -212,21 +219,16 @@
         }
 
         function downloadRecords() {
-            const csvContent = [
-                "Username,Bronce,Plata,Oro,Diamante,Maestro",
-                ...Object.entries(users).map(([username, data]) => {
-                    return [
-                        username,
-                        ...levels.map((_, i) => data.progress[i] || "-")
-                    ].join(",");
-                })
-            ].join("\n");
-
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const rows = ["Username,Bronce,Plata,Oro,Diamante,Maestro"];
+            for (const [username, data] of Object.entries(users)) {
+                const row = [username, ...levels.map((_, i) => data.progress[i] || "-")];
+                rows.push(row.join(","));
+            }
+            const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
+            const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "registro_usuarios.csv";
-            link.style.display = "none";
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "registro_usuarios.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
