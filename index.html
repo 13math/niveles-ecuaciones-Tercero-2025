@@ -19,7 +19,7 @@
         .container {
             margin: 20px auto;
             padding: 20px;
-            max-width: fit-content;
+            max-width: 500px;
             background-color: #fff;
             border: 2px solid #6c757d;
             border-radius: 10px;
@@ -96,13 +96,14 @@
                     <th>Oro</th>
                     <th>Diamante</th>
                     <th>Maestro</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="user-records">
                 <!-- Los registros se generarán dinámicamente -->
             </tbody>
         </table>
-        <button onclick="downloadRecords()">Descargar Registro</button>
+        <button onclick="downloadCSV()">Descargar CSV</button>
         <button onclick="logoutAdmin()">Cerrar Vista de Administrador</button>
     </div>
 
@@ -192,30 +193,18 @@
                 row.innerHTML = `
                     <td>${username}</td>
                     ${levels.map((level, i) => `<td>${data.progress[i] || "-"}</td>`).join("")}
+                    <td><button onclick="deleteUser('${username}')">Eliminar</button></td>
                 `;
                 records.appendChild(row);
             }
         }
 
-        function downloadRecords() {
-            const headers = ["Username", ...levels];
-            const rows = Object.entries(users).map(([username, data]) => [
-                username,
-                ...levels.map((_, i) => data.progress[i] || "-")
-            ]);
-
-            let csvContent = headers.join(",") + "\n";
-            rows.forEach(row => {
-                csvContent += row.join(",") + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "user_records.csv";
-            a.click();
-            URL.revokeObjectURL(url);
+        function deleteUser(username) {
+            if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+                delete users[username];
+                localStorage.setItem("users", JSON.stringify(users));
+                loadAdminView();
+            }
         }
 
         function logoutAdmin() {
@@ -225,6 +214,24 @@
         function switchView(containerId) {
             document.querySelectorAll(".container").forEach(c => c.classList.add("hidden"));
             document.getElementById(containerId).classList.remove("hidden");
+        }
+
+        function downloadCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Username,Bronce,Plata,Oro,Diamante,Maestro\n";
+
+            for (const [username, data] of Object.entries(users)) {
+                const row = [username, ...levels.map((_, i) => data.progress[i] || "-")];
+                csvContent += row.join(",") + "\n";
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "registro_usuarios.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
