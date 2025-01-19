@@ -176,7 +176,10 @@
                 document.getElementById("game-feedback").textContent = "¡Nivel completado! Avanzas al siguiente.";
                 loadAdminView(); // Actualizar la tabla de registros
             } else {
+                users[currentUser].progress[levelIndex] = new Date().toLocaleString(); // Registrar "Maestro"
+                localStorage.setItem("users", JSON.stringify(users));
                 switchToCongratulations();
+                loadAdminView(); // Actualizar la tabla de registros
             }
         }
 
